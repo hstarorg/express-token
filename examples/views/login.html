@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <base href="/">
+  <title>Express Token Examples</title>
+</head>
+
+<body>
+  <h1>登录页面</h1>
+
+  <fieldset>
+    <legend>账户信息</legend>
+    <div>
+      <label for="">用户名</label><input type="text" id="username">
+      <br>
+      <label for="">密码</label><input type="password" id="password">
+      <br>
+      <button type="button" id="btn-login" class="btn btn-default">登录</button>
+    </div>
+  </fieldset>
+  <script>
+    var ajax = {
+      _request(type, url, data, options) {
+        return new Promise((resolve, reject) => {
+          var xhr = new XMLHttpRequest();
+          xhr.open(type, url);
+          xhr.setRequestHeader('Content-Type', 'application/json');
+          xhr.onreadystatechange = function (evt) {
+            if (xhr.readyState === XMLHttpRequest.DONE) {
+              if (xhr.status < 200 || xhr.status >= 400) {
+                reject(xhr);
+              }
+              var contentType = xhr.getResponseHeader('Content-Type') || '';
+              if (contentType.indexOf('json') >= 0) {
+                resolve(JSON.parse(xhr.responseText));
+              } else {
+                resolve(xhr.responseText);
+              }
+            }
+          };
+          xhr.send(JSON.stringify(data));
+        });
+      },
+      post(url, data) {
+        return this._request('POST', url, data);
+      }
+    }
+    var btn = document.getElementById('btn-login');
+    btn.addEventListener('click', function () {
+      var postData = {
+        username: document.getElementById('username').value,
+        password: document.getElementById('password').value
+      };
+      ajax.post('login', postData)
+        .then(result => {
+          localStorage.setItem('x-token', result.token);
+          location.href = '';
+        });
+    }, false);
+  </script>
+</body>
+
+</html>

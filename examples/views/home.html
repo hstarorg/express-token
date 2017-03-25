@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <base href="/">
+  <title>Express Token Examples</title>
+  <style>
+    .hide {
+      display: none;
+    }
+
+    .show {
+      display: block;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>首页</h1>
+
+  <fieldset>
+    <legend>用户信息</legend>
+    <div id="notlogin">
+      <span>未登录</span>
+      <a href="login">点击进入登录页面</a>
+    </div>
+    <div id="loged" class="hide">
+      您已登录，用户名： <span></span>
+    </div>
+  </fieldset>
+  <script>
+    var ajax = {
+      _request(type, url, data, options) {
+        return new Promise((resolve, reject) => {
+          var xhr = new XMLHttpRequest();
+          xhr.open(type, url);
+          xhr.setRequestHeader('Content-Type', 'application/json');
+          if (options && options.headers) {
+            Object.keys(options.headers).forEach(key => {
+              xhr.setRequestHeader(key, options.headers[key]);
+            });
+          }
+          xhr.onreadystatechange = function (evt) {
+            if (xhr.readyState === XMLHttpRequest.DONE) {
+              if (xhr.status < 200 || xhr.status >= 400) {
+                reject(xhr);
+              }
+              var contentType = xhr.getResponseHeader('Content-Type') || '';
+              if (contentType.indexOf('json') >= 0) {
+                resolve(JSON.parse(xhr.responseText));
+              } else {
+                resolve(xhr.responseText);
+              }
+            }
+          };
+          if (type === 'POST' || type === 'PUT') {
+            xhr.send(JSON.stringify(data));
+          } else {
+            xhr.send();
+          }
+        });
+      },
+      get(url, options) {
+        return this._request('GET', url, null, options);
+      }
+    }
+
+    ajax.get('user', { headers: { 'x-token': localStorage.getItem('x-token') } })
+      .then(result => {
+        if (result && result.username) {
+          document.getElementById('notlogin').className = 'hide';
+          var loggedDiv = document.getElementById('loged');
+          loggedDiv.className = 'show';
+          loggedDiv.querySelector('span').innerText = result.username;
+        }
+      });
+  </script>
+</body>
+
+</html>
