@@ -25,9 +25,16 @@ const getUser = (req, res, next) => {
   }
 };
 
+const doLogout = (req, res, next) => {
+  expressToken.logout(req.token)
+    .then(() => res.end())
+    .catch(next);
+};
+
 module.exports = {
   getHomePage,
   getLoginPage,
   doLogin,
-  getUser
+  getUser,
+  doLogout
 };

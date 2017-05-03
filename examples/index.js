@@ -17,6 +17,8 @@ app.set('view engine', 'html');
 
 const router = require('./router');
 
+app.use('/public', express.static(path.join(__dirname, '/public')));
+
 app.use(expressToken());
 app.use('/', router);
 

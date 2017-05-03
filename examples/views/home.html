@@ -14,6 +14,7 @@
       display: block;
     }
   </style>
+  <script src="/public/jquery-3.2.1.min.js"></script>
 </head>
 
 <body>
@@ -27,54 +28,37 @@
     </div>
     <div id="loged" class="hide">
       您已登录，用户名： <span></span>
+
+      <button id="btn-logout">Logout</button>
     </div>
   </fieldset>
   <script>
-    var ajax = {
-      _request(type, url, data, options) {
-        return new Promise((resolve, reject) => {
-          var xhr = new XMLHttpRequest();
-          xhr.open(type, url);
-          xhr.setRequestHeader('Content-Type', 'application/json');
-          if (options && options.headers) {
-            Object.keys(options.headers).forEach(key => {
-              xhr.setRequestHeader(key, options.headers[key]);
-            });
-          }
-          xhr.onreadystatechange = function (evt) {
-            if (xhr.readyState === XMLHttpRequest.DONE) {
-              if (xhr.status < 200 || xhr.status >= 400) {
-                reject(xhr);
-              }
-              var contentType = xhr.getResponseHeader('Content-Type') || '';
-              if (contentType.indexOf('json') >= 0) {
-                resolve(JSON.parse(xhr.responseText));
-              } else {
-                resolve(xhr.responseText);
-              }
+    function _doAutoLogin() {
+      var token = localStorage.getItem('x-token');
+      if (token) {
+        $.ajax('/user', { headers: { 'x-token': token } })
+          .then(result => {
+            if (result && result.username) {
+              $('#notlogin').addClass('hide');
+              $('#loged').addClass('show').find('span').text(result.username);
             }
-          };
-          if (type === 'POST' || type === 'PUT') {
-            xhr.send(JSON.stringify(data));
-          } else {
-            xhr.send();
-          }
-        });
-      },
-      get(url, options) {
-        return this._request('GET', url, null, options);
+          });
       }
     }
-
-    ajax.get('user', { headers: { 'x-token': localStorage.getItem('x-token') } })
-      .then(result => {
-        if (result && result.username) {
-          document.getElementById('notlogin').className = 'hide';
-          var loggedDiv = document.getElementById('loged');
-          loggedDiv.className = 'show';
-          loggedDiv.querySelector('span').innerText = result.username;
-        }
+    function _bindEvents() {
+      $('#btn-logout').on('click', function (e) {
+        var token = localStorage.getItem('x-token');
+        $.ajax('/logout', { method: 'POST', headers: { 'x-token': token } })
+          .then(() => {
+            localStorage.removeItem('x-token');
+            location.reload();
+          });
       });
+    }
+    $(function () {
+      _doAutoLogin();
+      _bindEvents();
+    });
   </script>
 </body>
 
