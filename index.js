@@ -1,11 +1,15 @@
-const jwt = require('jsonwebtoken');
+const uid = require('uid-safe');
 const MemoryStore = require('./lib/MemoryStore');
 
 const defaults = {
-  ttl: 1000 * 60 * 30, // 30分钟
-  saveUninitializedToken: false, // 是否保存未初始化的token
-  secret: Math.random().toString(36), // 随机产生安全码
-  tokenHeader: 'x-token'
+  ttl: 1000 * 60 * 30, // thirty minutes
+  tokenHeader: 'x-token',
+  generateToken(req) {
+    return uid.sync(24);
+  },
+  getToken(req, tokenHeader) {
+    return req.headers[tokenHeader];
+  }
 };
 
 let tokenOptions;
@@ -26,20 +30,15 @@ const token = options => {
     }
     Promise.resolve()
       .then(() => {
-        if (typeof opts.getToken === 'function') {
-          return opts.getToken(req);
-        } else {
-          return req.headers[opts.tokenHeader];
-        }
+        return opts.getToken(req, opts.tokenHeader);
       })
       .then(token => {
-        console.log(token);
         if (!token) {
           return next();
         }
         opts.store.get(token)
           .then(user => {
-            console.log(user);
+            req.token = token;
             req.user = user;
             next();
           });
@@ -48,10 +47,20 @@ const token = options => {
   };
 };
 
+/**
+ * Log in with user
+ */
 token.login = user => {
-  let t = jwt.sign(user, tokenOptions.secret);
-  tokenOptions.store.set(t, user);
-  return Promise.resolve(t);
+  let t = tokenOptions.generateToken(user);
+  return tokenOptions.store.set(t, user)
+    .then(() => t);
+};
+
+/**
+ * Log out by token
+ */
+token.logout = t => {
+  return tokenOptions.store.remove(t);
 };
 
 module.exports = token;
